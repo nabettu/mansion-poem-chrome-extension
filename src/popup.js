@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-import './popup.css';
+import "./popup.css";
 
 (function() {
   // We will make use of Storage API to get and store `count` value
@@ -10,103 +10,66 @@ import './popup.css';
   // To get storage access, we have to mention it in `permissions` property of manifest.json file
   // More information on Permissions can we found at
   // https://developer.chrome.com/extensions/declare_permissions
-  const counterStorage = {
-    get: cb => {
-      chrome.storage.sync.get(['count'], result => {
-        cb(result.count);
-      });
-    },
-    set: (value, cb) => {
-      chrome.storage.sync.set(
-        {
-          count: value,
-        },
-        () => {
-          cb();
-        }
-      );
-    },
+  const textStorage = {
+    get: cb => chrome.storage.sync.get(["text"], result => cb(result.text)),
+    set: (value, cb) => chrome.storage.sync.set({ text: value }, () => cb())
+  };
+  const nameStorage = {
+    get: cb => chrome.storage.sync.get(["name"], result => cb(result.name)),
+    set: (value, cb) => chrome.storage.sync.set({ name: value }, () => cb())
   };
 
-  function setupCounter(initialValue = 0) {
-    document.getElementById('counter').innerHTML = initialValue;
+  const textInput = document.getElementById("mansion-poem-textinput");
+  const nameInput = document.getElementById("mansion-poem-nameinput");
+  const submitButton = document.getElementById("mansion-poem-submit");
 
-    document.getElementById('incrementBtn').addEventListener('click', () => {
-      updateCounter({
-        type: 'INCREMENT',
+  submitButton.addEventListener("click", () => {
+    const text = textInput.value;
+    textStorage.set(text, () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        const tab = tabs[0];
+        chrome.tabs.sendMessage(tab.id, {
+          type: "TEXT_CHANGE",
+          payload: { text }
+        });
       });
     });
 
-    document.getElementById('decrementBtn').addEventListener('click', () => {
-      updateCounter({
-        type: 'DECREMENT',
+    const name = nameInput.value;
+    nameStorage.set(name, () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        const tab = tabs[0];
+        chrome.tabs.sendMessage(tab.id, {
+          type: "NAME_CHANGE",
+          payload: { name }
+        });
       });
     });
+  });
+
+  function setupText(initialValue = "ポエムポエム") {
+    textInput.value = initialValue;
+  }
+  function setupName(initialValue = "メゾン・ポエム") {
+    nameInput.value = initialValue;
   }
 
-  function updateCounter({ type }) {
-    counterStorage.get(count => {
-      let newCount;
-
-      if (type === 'INCREMENT') {
-        newCount = count + 1;
-      } else if (type === 'DECREMENT') {
-        newCount = count - 1;
+  function restore() {
+    textStorage.get(text => {
+      if (typeof text === "undefined") {
+        textStorage.set("", () => setupText(""));
       } else {
-        newCount = count;
+        setupText(text);
       }
-
-      counterStorage.set(newCount, () => {
-        document.getElementById('counter').innerHTML = newCount;
-
-        // Communicate with content script of
-        // active tab by sending a message
-        chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-          const tab = tabs[0];
-
-          chrome.tabs.sendMessage(
-            tab.id,
-            {
-              type: 'COUNT',
-              payload: {
-                count: newCount,
-              },
-            },
-            response => {
-              console.log('Current count value passed to contentScript file');
-            }
-          );
-        });
-      });
     });
-  }
-
-  function restoreCounter() {
-    // Restore count value
-    counterStorage.get(count => {
-      if (typeof count === 'undefined') {
-        // Set counter value as 0
-        counterStorage.set(0, () => {
-          setupCounter(0);
-        });
+    nameStorage.get(name => {
+      if (typeof name === "undefined") {
+        nameStorage.set("", () => setupName(""));
       } else {
-        setupCounter(count);
+        setupName(name);
       }
     });
   }
 
-  document.addEventListener('DOMContentLoaded', restoreCounter);
-
-  // Communicate with background file by sending a message
-  chrome.runtime.sendMessage(
-    {
-      type: 'GREETINGS',
-      payload: {
-        message: 'Hello, my name is Pop. I am from Popup.',
-      },
-    },
-    response => {
-      console.log(response.message);
-    }
-  );
+  document.addEventListener("DOMContentLoaded", restore);
 })();
