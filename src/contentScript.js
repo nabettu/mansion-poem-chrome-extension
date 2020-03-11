@@ -13,6 +13,7 @@
 
 const POEM_TEXT_ID = "mansion-poem-text";
 const POEM_NAME_ID = "mansion-poem-name";
+const POEM_COPY_ID = "mansion-poem-copy";
 const POEM_IMG_ID = "mansion-poem-img";
 
 const img = document.createElement("img");
@@ -20,7 +21,7 @@ img.setAttribute("id", POEM_IMG_ID);
 img.setAttribute(
   "style",
   `position: fixed;
-  bottom: 87px;
+  bottom: 187px;
   width: 250px;
   height: 500px;
   right: calc(50% - 125px);
@@ -58,7 +59,7 @@ padding: 4px 20px;
 background-color: #B60808;
 border: solid #fff 2px;
 font-size: 33px;
-bottom: 160px;
+bottom: 260px;
 left: calc(50% + 20px);
 pointer-events: none;
 font-family: serif;
@@ -66,6 +67,25 @@ font-weight: bold;
 text-align: center;`
 );
 document.body.appendChild(name);
+
+const copy = document.createElement("p");
+copy.setAttribute("id", POEM_COPY_ID);
+copy.setAttribute(
+  "style",
+  `position: fixed;
+color: #fff;
+padding: 14px 20px;
+background: linear-gradient(180deg, #D8B70A 0%, #917B0D 100%);
+font-size: 33px;
+width: 100%;
+bottom: 0;
+left: 0;
+pointer-events: none;
+font-family: serif;
+font-weight: bold;
+text-align: center;`
+);
+document.body.appendChild(copy);
 
 // Listen for message
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -75,6 +95,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request.type === "NAME_CHANGE") {
     document.getElementById(POEM_NAME_ID).innerHTML = request.payload.name;
+  }
+  if (request.type === "COPY_CHANGE") {
+    document.getElementById(POEM_COPY_ID).innerHTML = request.payload.copy;
   }
 
   // Send an empty response

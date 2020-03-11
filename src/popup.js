@@ -18,9 +18,14 @@ import "./popup.css";
     get: cb => chrome.storage.sync.get(["name"], result => cb(result.name)),
     set: (value, cb) => chrome.storage.sync.set({ name: value }, () => cb())
   };
+  const copyStorage = {
+    get: cb => chrome.storage.sync.get(["copy"], result => cb(result.copy)),
+    set: (value, cb) => chrome.storage.sync.set({ copy: value }, () => cb())
+  };
 
   const textInput = document.getElementById("mansion-poem-textinput");
   const nameInput = document.getElementById("mansion-poem-nameinput");
+  const copyInput = document.getElementById("mansion-poem-copyinput");
   const submitButton = document.getElementById("mansion-poem-submit");
 
   submitButton.addEventListener("click", () => {
@@ -45,28 +50,51 @@ import "./popup.css";
         });
       });
     });
+
+    const copy = copyInput.value;
+    copyStorage.set(copy, () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        const tab = tabs[0];
+        chrome.tabs.sendMessage(tab.id, {
+          type: "COPY_CHANGE",
+          payload: { copy }
+        });
+      });
+    });
   });
 
-  function setupText(initialValue = "ポエムポエム") {
+  function setupText(initialValue) {
     textInput.value = initialValue;
   }
-  function setupName(initialValue = "メゾン・ポエム") {
+  function setupName(initialValue) {
     nameInput.value = initialValue;
+  }
+  function setupCopy(initialValue) {
+    copyInput.value = initialValue;
   }
 
   function restore() {
     textStorage.get(text => {
-      if (typeof text === "undefined") {
-        textStorage.set("", () => setupText(""));
+      if (!text) {
+        textStorage.set("真に安らげる場所がここにはある", () => setupText(""));
       } else {
         setupText(text);
       }
     });
     nameStorage.get(name => {
-      if (typeof name === "undefined") {
-        nameStorage.set("", () => setupName(""));
+      if (!name) {
+        nameStorage.set("メゾン・ポエム", () => setupName(""));
       } else {
         setupName(name);
+      }
+    });
+    copyStorage.get(copy => {
+      if (!copy) {
+        copyStorage.set("2020年2月30日モデルルームオープン", () =>
+          setupCopy("")
+        );
+      } else {
+        setupCopy(copy);
       }
     });
   }
